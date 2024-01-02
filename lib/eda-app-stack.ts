@@ -22,10 +22,22 @@ export class EDAAppStack extends cdk.Stack {
       publicReadAccess: false,
     });
 
+    const imageDeadLetterQueue = new sqs.Queue(this, "dead-letter-queue", {
+      queueName: "dead-letter-queue",
+      retentionPeriod: cdk.Duration.minutes(15),
+    });
+
     // Output
     const imageProcessQueue = new sqs.Queue(this, "img-created-queue", {
       receiveMessageWaitTime: cdk.Duration.seconds(10),
+      deadLetterQueue: {  
+        queue: imageDeadLetterQueue,
+        maxReceiveCount: 3,
+
+      }
     });
+
+ 
 
     // const mailerQ = new sqs.Queue(this, "mailer-queue", {
     //   receiveMessageWaitTime: cdk.Duration.seconds(10),
@@ -56,6 +68,13 @@ export class EDAAppStack extends cdk.Stack {
       entry: `${__dirname}/../lambdas/confirmationMailer.ts`,
     });
 
+    const rejectionMailerFn = new lambdanode.NodejsFunction(this, "rejection-mailer-function", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(3),
+      entry: `${__dirname}/../lambdas/rejectionMailer.ts`,
+    });
+
     // Event triggers
 
     imagesBucket.addEventNotification(
@@ -64,8 +83,22 @@ export class EDAAppStack extends cdk.Stack {
   );
 
 
-  newImageTopic.addSubscription(new subs.LambdaSubscription(confirmationMailerFn));
 
+   newImageTopic.addSubscription(new subs.LambdaSubscription(confirmationMailerFn));
+  
+  newImageTopic.addSubscription(
+    new subs.SqsSubscription(imageProcessQueue),
+  );
+  
+
+
+
+
+  rejectionMailerFn.addEventSource(new events.SqsEventSource(imageDeadLetterQueue, {
+    batchSize: 5,
+    maxBatchingWindow: cdk.Duration.seconds(10),
+    maxConcurrency: 5,
+  }));
 
 
     const newImageMailEventSource = new events.SqsEventSource(imageProcessQueue, {
@@ -81,7 +114,24 @@ export class EDAAppStack extends cdk.Stack {
 
     imagesBucket.grantRead(processImageFn);
 
+    imageDeadLetterQueue.grantConsumeMessages(rejectionMailerFn);
+
+    
+  
+
     confirmationMailerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+          "ses:SendTemplatedEmail",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    rejectionMailerFn.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [

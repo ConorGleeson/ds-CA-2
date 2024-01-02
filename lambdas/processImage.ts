@@ -30,9 +30,9 @@ export const handler: SQSHandler = async (event) => {
         }
         // Check that the image type is supported
         const imageType = typeMatch[1].toLowerCase();
-        if (imageType != "jpeg" && imageType != "png") {
+        if (imageType !== "jpeg" && imageType !== "png") {
           console.log(`Unsupported image type: ${imageType}`);
-          throw new Error("Unsupported image type: ${imageType. ");
+          throw new Error(`Unsupported image type: ${imageType}`);
         }
         // process image upload 
       }
