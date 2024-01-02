@@ -112,12 +112,12 @@ function getTextContent({ name, email, message }: ContactDetails) {
 }
 
 //method to check filetypes
-function imageCheck (file: string) {
-  const fileTypes = [".jpeg, .png"]
-  const type  = file.toLowerCase().slice(file.lastIndexOf('.'))
-  return fileTypes.includes(type)
-
+function imageCheck(file: string) {
+  const fileTypes = [".jpeg", ".png"];
+  const type = file.toLowerCase().slice(file.lastIndexOf('.'));
+  return fileTypes.includes(type);
 }
+
 
 async function sendRejectionEmail(toEmail: string, fromEmail: string, errorMessage: string) {
   const params = {
