@@ -31,7 +31,7 @@ export const handler: SQSHandler = async (event: any) => {
       for (const messageRecord of snsMessage.Records) {
         const s3e = messageRecord.s3;
         const srcBucket = s3e.bucket.name;
-        const srcKey = decodeURIComponent(s3e.object.key.replace(/+/g, " "));
+        const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));
         try {
           // Check if the uploaded file is an image
           if (!imageCheck(srcKey)) {
