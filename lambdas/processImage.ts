@@ -9,6 +9,11 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 
+import {DynamoDBClient} from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+
+const ddbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+
 const s3 = new S3Client();
 
 export const handler: SQSHandler = async (event) => {
@@ -36,7 +41,31 @@ export const handler: SQSHandler = async (event) => {
           throw new Error(`Unsupported image type: ${imageType}`);
         }
         // process image upload 
+
+        const insert = new PutCommand({
+          TableName: "imagesTable",
+          Item: {
+            Name: srcKey,
+
+          },
+        });
+
+        const Output = await ddbDocClient.send(insert);
       }
     }
   }
 };
+
+function creatDDbDocClient(){
+  const ddbClient = new DynamoDBClient({region: process.env.REGiON});
+  const marshallOptions = {
+    convertEmptyValues: true, 
+    removeUndefinedValues: true,
+    convertClassInstanceToMap: true
+  };
+  const unmarshallOptions = {
+    wrapNumbers: false,
+  };
+  const translateConfig = {marshallOptions, unmarshallOptions};
+  return DynamoDBDocumentClient.from(ddbClient, translateConfig);
+}

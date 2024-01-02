@@ -8,6 +8,7 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 
 import { Construct } from "constructs";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -15,6 +16,14 @@ import { Construct } from "constructs";
 export class EDAAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const imageTable = new dynamodb.Table(this, "Images", {
+      partitionKey: { name: "Name", type: dynamodb.AttributeType.STRING },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      tableName: "imagesTable",
+    });
+    
 
     const imagesBucket = new s3.Bucket(this, "images", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -108,6 +117,8 @@ export class EDAAppStack extends cdk.Stack {
 
     processImageFn.addEventSource(newImageMailEventSource);
 
+   
+
     //mailerFn.addEventSource(newImageMailEventSource)
 
     // Permissions
@@ -118,6 +129,7 @@ export class EDAAppStack extends cdk.Stack {
 
 
   
+    imageTable.grantReadWriteData(processImageFn);
 
     confirmationMailerFn.addToRolePolicy(
       new iam.PolicyStatement({
