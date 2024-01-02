@@ -32,7 +32,7 @@ export class EDAAppStack extends cdk.Stack {
       receiveMessageWaitTime: cdk.Duration.seconds(10),
       deadLetterQueue: {  
         queue: imageDeadLetterQueue,
-        maxReceiveCount: 3,
+        maxReceiveCount: 1,
 
       }
     });
@@ -116,7 +116,7 @@ export class EDAAppStack extends cdk.Stack {
 
     imageDeadLetterQueue.grantConsumeMessages(rejectionMailerFn);
 
-    
+
   
 
     confirmationMailerFn.addToRolePolicy(
